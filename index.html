@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>엔화 환율계산기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f4f8; --paper:#ffffff; --ink:#18203a; --muted:#5f6680; --line:#dde0ea;
+  --ai:#24396e; --ai-soft:#e6eaf5; --shu:#c4432b; --good:#2f7a52;
+  --f-display:"Zen Kaku Gothic New","Hiragino Sans","Apple SD Gothic Neo",sans-serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1322; --paper:#181d30; --ink:#e8eaf3; --muted:#9aa1b8; --line:#2b3250;
+  --ai:#8fa6e6; --ai-soft:#222b47; --shu:#ec7a62; --good:#6cc596; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1322; --paper:#181d30; --ink:#e8eaf3; --muted:#9aa1b8; --line:#2b3250;
+  --ai:#8fa6e6; --ai-soft:#222b47; --shu:#ec7a62; --good:#6cc596; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:460px;margin:0 auto;padding-block:28px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:900;font-size:1.6rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 small{display:block;font-size:.72rem;font-weight:500;color:var(--muted);letter-spacing:.12em}
+.seal{font-family:var(--f-display);font-weight:900;color:var(--shu);border:2px solid var(--shu);border-radius:6px;
+  width:46px;height:46px;display:grid;place-items:center;font-size:1.5rem;transform:rotate(-6deg);flex:none}
+.rate{background:var(--ai);color:#fff;border-radius:14px;padding:16px 18px;display:grid;gap:4px}
+.rate .lbl{font-size:.75rem;letter-spacing:.08em;opacity:.8}
+.rate .val{font-family:var(--f-display);font-weight:900;font-size:2.2rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.rate .val span{font-size:1rem;font-weight:700;opacity:.85}
+.rate .meta{font-size:.78rem;opacity:.85;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;background:#7ee0a8;display:inline-block}
+.dot.stale{background:#f3c06b}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rate{background:var(--ai-soft);color:var(--ink)}}
+:root[data-theme="dark"] .rate{background:var(--ai-soft);color:var(--ink)}
+.slip{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.field{padding:14px 18px;display:grid;gap:6px}
+.field label{font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between}
+.inrow{display:flex;align-items:baseline;gap:8px}
+.cur{font-family:var(--f-display);font-weight:700;font-size:1.5rem;color:var(--ai);width:1.4em;flex:none}
+.inrow input{flex:1;min-width:0;border:none;background:transparent;color:var(--ink);font-family:var(--f-display);
+  font-weight:700;font-size:2rem;font-variant-numeric:tabular-nums;padding:2px 0;outline:none;text-align:right}
+.inrow input:focus-visible{box-shadow:0 2px 0 var(--ai)}
+.swap{display:flex;align-items:center;gap:10px;padding:0 18px}
+.swap hr{flex:1;border:none;border-top:1px dashed var(--line);margin:0}
+.swap button{border:1px solid var(--line);background:var(--paper);color:var(--ai);border-radius:999px;
+  width:34px;height:34px;font-size:1rem;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;
+  padding:7px 13px;font:500 .85rem var(--f-body);cursor:pointer;font-variant-numeric:tabular-nums}
+.chips button:hover,.chips button:focus-visible{border-color:var(--ai);color:var(--ai);outline:none}
+.sect{display:grid;gap:8px}
+.sect h2{font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.08em;margin:0}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);background:var(--ai-soft);border-radius:10px;padding:3px;gap:3px}
+.modes button{border:none;background:transparent;color:var(--muted);border-radius:8px;padding:8px 4px;font:500 .82rem var(--f-body);cursor:pointer}
+.modes button[aria-pressed="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.modes button:focus-visible{outline:2px solid var(--ai)}
+.note{font-size:.78rem;color:var(--muted);margin:0}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.9rem}
+td{padding:7px 0;border-bottom:1px solid var(--line)}
+td:last-child{text-align:right;font-weight:600}
+details{font-size:.85rem;color:var(--muted)}
+details summary{cursor:pointer}
+details .inrow input{font-size:1.1rem;text-align:left;border-bottom:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><small>JPY ⇄ KRW</small>엔화 환율계산기</h1>
+    <div class="seal" aria-hidden="true">円</div>
+  </header>
+
+  <section class="rate" aria-live="polite">
+    <div class="lbl" id="rateLbl">매매기준율 · 100엔당</div>
+    <div class="val"><span id="rate100">841.62</span> <span>원</span></div>
+    <div class="meta"><i class="dot" id="dot"></i><span id="rateTime"></span><span id="rateSrc"></span></div>
+  </section>
+
+  <div class="slip">
+    <div class="field">
+      <label for="jpy"><span>일본 엔</span><span>JPY</span></label>
+      <div class="inrow"><span class="cur">¥</span><input id="jpy" inputmode="decimal" autocomplete="off" value="10,000"></div>
+    </div>
+    <div class="swap"><hr><button id="swapBtn" type="button" aria-label="입력 방향 바꾸기">⇅</button><hr></div>
+    <div class="field">
+      <label for="krw"><span>한국 원</span><span>KRW</span></label>
+      <div class="inrow"><span class="cur">₩</span><input id="krw" inputmode="decimal" autocomplete="off"></div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <h2>자주 쓰는 금액</h2>
+    <div class="chips" id="chips">
+      <button data-y="1000">¥1,000</button><button data-y="5000">¥5,000</button>
+      <button data-y="10000">¥10,000</button><button data-y="30000">¥30,000</button>
+      <button data-y="50000">¥50,000</button><button data-y="100000">¥100,000</button>
+    </div>
+  </div>
+
+  <div class="sect">
+    <h2>적용 환율</h2>
+    <div class="modes" id="modes">
+      <button data-m="base" aria-pressed="true">매매기준율</button>
+      <button data-m="cash" aria-pressed="false">현찰 살 때</button>
+      <button data-m="card" aria-pressed="false">카드 결제</button>
+    </div>
+    <p class="note" id="modeNote">은행 고시 기준 환율 그대로 계산합니다.</p>
+  </div>
+
+  <div class="sect">
+    <h2>지폐별 환산</h2>
+    <table id="tbl"></table>
+  </div>
+
+  <details>
+    <summary>환율 직접 입력</summary>
+    <div class="inrow" style="margin-top:8px"><span>100엔 =</span><input id="manual" inputmode="decimal" placeholder="예: 845.20"><span>원</span></div>
+    <p class="note">입력하면 이 기기에서만 수동 환율을 씁니다. 비우면 자동 환율로 돌아갑니다.</p>
+  </details>
+</div>
+
+<script>
+// 자동 환율을 못 불러올 때 쓰는 값
+const FALLBACK = { per100: 841.62, asOf: "2026-10-27T13:57:00+09:00", note: "Investing.com (고정값)" };
+const MODES = {
+  base: { k: 1, lbl: "매매기준율", note: "은행 고시 기준 환율 그대로 계산합니다." },
+  cash: { k: 1.0175, lbl: "현찰 살 때", note: "환전 수수료 약 1.75%를 더한 추정치입니다. 우대율에 따라 낮아집니다." },
+  card: { k: 1.01, lbl: "카드 결제", note: "해외결제 수수료 약 1%를 더한 추정치입니다. 카드사마다 다릅니다." }
+};
+let auto = { ...FALLBACK };
+let manual = null, mode = "base", dir = "jpy";
+try { const m = parseFloat(localStorage.getItem("manualRate")); if (m > 0) manual = m; } catch (e) {}
+const $ = id => document.getElementById(id);
+const num = s => parseFloat(String(s).replace(/[^\d.]/g, "")) || 0;
+const fmt = (n, d = 0) => n.toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+const perYen = () => (manual || auto.per100) / 100 * MODES[mode].k;
+
+function renderRate() {
+  const base = manual || auto.per100;
+  $("rate100").textContent = fmt(base * MODES[mode].k, 2);
+  $("rateLbl").textContent = MODES[mode].lbl + " · 100엔당";
+  if (manual) { $("rateTime").textContent = "직접 입력한 환율"; $("dot").className = "dot stale"; $("rateSrc").textContent = ""; return; }
+  const t = new Date(auto.asOf);
+  const ageH = (Date.now() - t) / 36e5;
+  $("rateTime").textContent = isNaN(t) ? "" : t.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) + " 기준";
+  $("rateSrc").textContent = auto.note ? "· " + auto.note : "";
+  $("dot").className = ageH < 30 ? "dot" : "dot stale";
+}
+function calc() {
+  const r = perYen();
+  if (dir === "jpy") $("krw").value = fmt(num($("jpy").value) * r);
+  else $("jpy").value = fmt(num($("krw").value) / r);
+  $("tbl").innerHTML = [1000, 2000, 5000, 10000].map(y =>
+    `<tr><td>¥${fmt(y)} 지폐</td><td>₩${fmt(y * r)}</td></tr>`).join("");
+}
+function reformat(el) {
+  const raw = el.value.replace(/[^\d.]/g, "");
+  const [i, d] = raw.split(".");
+  el.value = (i ? fmt(+i) : "") + (d !== undefined ? "." + d.slice(0, 2) : "");
+}
+$("jpy").addEventListener("input", e => { dir = "jpy"; reformat(e.target); calc(); });
+$("krw").addEventListener("input", e => { dir = "krw"; reformat(e.target); calc(); });
+$("swapBtn").addEventListener("click", () => { dir = dir === "jpy" ? "krw" : "jpy"; $(dir).focus(); $(dir).select(); });
+$("chips").addEventListener("click", e => {
+  const y = e.target.dataset.y; if (!y) return;
+  dir = "jpy"; $("jpy").value = fmt(+y); calc();
+});
+$("modes").addEventListener("click", e => {
+  const m = e.target.dataset.m; if (!m) return;
+  mode = m;
+  document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m));
+  $("modeNote").textContent = MODES[m].note;
+  renderRate(); calc();
+});
+$("manual").value = manual ? manual : "";
+$("manual").addEventListener("input", e => {
+  const v = num(e.target.value);
+  manual = v > 0 ? v : null;
+  try { manual ? localStorage.setItem("manualRate", v) : localStorage.removeItem("manualRate"); } catch (err) {}
+  renderRate(); calc();
+});
+renderRate(); calc();
+
+// 페이지를 열 때마다 무료 환율 API에서 최신 값을 불러옴 (실패하면 위 고정값 사용)
+(async () => {
+  try {
+    const r = await fetch("https://open.er-api.com/v6/latest/JPY");
+    const d = await r.json();
+    if (d.result === "success" && d.rates && d.rates.KRW > 0) {
+      auto = { per100: Math.round(d.rates.KRW * 10000) / 100, asOf: new Date(d.time_last_update_unix * 1000).toISOString(), note: "ExchangeRate-API" };
+      renderRate(); calc(); return;
+    }
+  } catch (e) {}
+  try {
+    const r = await fetch("https://api.frankfurter.app/latest?from=JPY&to=KRW");
+    const d = await r.json();
+    if (d.rates && d.rates.KRW > 0) {
+      auto = { per100: Math.round(d.rates.KRW * 10000) / 100, asOf: d.date + "T16:00:00+01:00", note: "ECB (Frankfurter)" };
+      renderRate(); calc();
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
