@@ -93,11 +93,12 @@ h1 small{display:block;font-size:.72rem;font-weight:500;color:var(--muted);lette
 .total b{font-family:var(--f-display);font-size:1.4rem;color:var(--shu);font-variant-numeric:tabular-nums}
 
 .slip{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.field{padding:14px 18px;display:grid;gap:6px}
+.field{padding:14px 18px;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.inrow{min-width:0}
 .field label{font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between}
 .inrow{display:flex;align-items:baseline;gap:8px}
 .cur{font-family:var(--f-display);font-weight:700;font-size:1.5rem;color:var(--ai);width:1.4em;flex:none}
-.inrow input{flex:1;min-width:0;border:none;background:transparent;color:var(--ink);font-family:var(--f-display);
+.inrow input{flex:1 1 0;width:0;min-width:0;border:none;background:transparent;color:var(--ink);font-family:var(--f-display);
   font-weight:700;font-size:2rem;font-variant-numeric:tabular-nums;padding:2px 0;outline:none;text-align:right}
 .inrow input:focus-visible{box-shadow:0 2px 0 var(--ai)}
 .swap{display:flex;align-items:center;gap:10px;padding:0 18px}
