@@ -4,41 +4,94 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>엔화 환율계산기</title>
+<meta name="description" content="일본 가격표를 카메라로 비추면 원화로 바꿔 주는 엔화 환율계산기">
+<meta name="theme-color" content="#24396e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="엔화계산기">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
 <style>
+/* Layout: one narrow column. Rate card, then the camera/photo tools, then the manual calculator. */
 :root{
   --bg:#f3f4f8; --paper:#ffffff; --ink:#18203a; --muted:#5f6680; --line:#dde0ea;
-  --ai:#24396e; --ai-soft:#e6eaf5; --shu:#c4432b; --good:#2f7a52;
+  --ai:#24396e; --ai-soft:#e6eaf5; --shu:#c4432b; --good:#2f7a52; --on-ai:#ffffff;
   --f-display:"Zen Kaku Gothic New","Hiragino Sans","Apple SD Gothic Neo",sans-serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+@media (prefers-color-scheme: dark){:root{
   --bg:#0f1322; --paper:#181d30; --ink:#e8eaf3; --muted:#9aa1b8; --line:#2b3250;
-  --ai:#8fa6e6; --ai-soft:#222b47; --shu:#ec7a62; --good:#6cc596; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0f1322; --paper:#181d30; --ink:#e8eaf3; --muted:#9aa1b8; --line:#2b3250;
-  --ai:#8fa6e6; --ai-soft:#222b47; --shu:#ec7a62; --good:#6cc596; color-scheme:dark}
+  --ai:#8fa6e6; --ai-soft:#222b47; --shu:#ec7a62; --good:#6cc596; --on-ai:#0f1322; color-scheme:dark}}
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
-.wrap{max-width:460px;margin:0 auto;padding-block:28px 40px;
+.wrap{max-width:460px;margin:0 auto;padding-top:max(24px,env(safe-area-inset-top,0px));padding-bottom:max(40px,env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   display:flex;flex-direction:column;gap:18px}
+[hidden]{display:none!important}
 header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-h1{font-family:var(--f-display);font-weight:900;font-size:1.6rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1{font-family:var(--f-display);font-weight:900;font-size:1.6rem;margin:0;letter-spacing:-.01em}
 h1 small{display:block;font-size:.72rem;font-weight:500;color:var(--muted);letter-spacing:.12em}
 .seal{font-family:var(--f-display);font-weight:900;color:var(--shu);border:2px solid var(--shu);border-radius:6px;
   width:46px;height:46px;display:grid;place-items:center;font-size:1.5rem;transform:rotate(-6deg);flex:none}
-.rate{background:var(--ai);color:#fff;border-radius:14px;padding:16px 18px;display:grid;gap:4px}
-.rate .lbl{font-size:.75rem;letter-spacing:.08em;opacity:.8}
+.rate{background:var(--ai);color:var(--on-ai);border-radius:14px;padding:16px 18px;display:grid;gap:4px}
+@media (prefers-color-scheme: dark){.rate{background:var(--ai-soft);color:var(--ink)}}
+.rate .lbl{font-size:.75rem;letter-spacing:.08em;opacity:.85}
 .rate .val{font-family:var(--f-display);font-weight:900;font-size:2.2rem;font-variant-numeric:tabular-nums;line-height:1.1}
 .rate .val span{font-size:1rem;font-weight:700;opacity:.85}
-.rate .meta{font-size:.78rem;opacity:.85;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rate .meta{font-size:.78rem;opacity:.9;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .dot{width:7px;height:7px;border-radius:50%;background:#7ee0a8;display:inline-block}
 .dot.stale{background:#f3c06b}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rate{background:var(--ai-soft);color:var(--ink)}}
-:root[data-theme="dark"] .rate{background:var(--ai-soft);color:var(--ink)}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;gap:12px}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card-head h2{font-family:var(--f-display);font-weight:900;font-size:1.1rem;margin:0}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:10px;padding:13px 10px;
+  font:600 .95rem var(--f-body);cursor:pointer;border:1px solid var(--ai);text-align:center;color:var(--ai);background:transparent}
+.btn small{font-weight:400;font-size:.72rem;opacity:.85}
+.btn.primary{background:var(--ai);color:var(--on-ai)}
+.btn:focus-visible,.btn:focus-within{outline:2px solid var(--ai);outline-offset:2px}
+.btn input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.btn[aria-disabled="true"]{opacity:.5;pointer-events:none}
+.status{display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--muted)}
+.status img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line);flex:none}
+.status .grow{flex:1;min-width:0}
+.small-btn{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:6px 10px;font:500 .8rem var(--f-body);cursor:pointer}
+.spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--ai);border-radius:50%;display:inline-block;vertical-align:-2px;margin-right:6px;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{color:var(--shu);font-size:.85rem;margin:0}
+.note{font-size:.78rem;color:var(--muted);margin:0}
+.opt{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.opt input{accent-color:var(--ai);width:16px;height:16px}
+
+.items{display:grid}
+.item{padding:10px 0;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.item-main{display:grid;grid-template-columns:1fr auto;gap:2px 12px;background:none;border:0;padding:0;text-align:left;color:var(--ink);font:inherit;cursor:pointer;width:100%}
+.item-main:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+.nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.ja{font-size:.78rem;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.won{font-family:var(--f-display);font-weight:900;font-size:1.1rem;text-align:right;font-variant-numeric:tabular-nums;color:var(--ai)}
+.yen{font-size:.8rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:.68rem;padding:1px 6px;border-radius:4px;background:var(--ai-soft);color:var(--ai);margin-left:6px;font-weight:600;vertical-align:1px}
+.cmp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.82rem}
+.ko{display:flex;align-items:center;gap:4px;color:var(--muted)}
+.ko input{width:7.5em;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);padding:4px 6px;font:600 .85rem var(--f-body);font-variant-numeric:tabular-nums;text-align:right}
+.verdict{font-weight:700;padding:3px 8px;border-radius:6px;font-variant-numeric:tabular-nums}
+.verdict.good{color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.verdict.bad{color:var(--shu);background:color-mix(in srgb,var(--shu) 12%,transparent)}
+.verdict.even,.verdict.none{color:var(--muted);background:var(--ai-soft);font-weight:500}
+.basis{font-size:.72rem;color:var(--muted);width:100%}
+.sum{border-radius:10px;padding:12px 14px;display:grid;gap:2px;background:var(--ai-soft)}
+.sum .big{font-family:var(--f-display);font-weight:900;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.sum .big.good{color:var(--good)} .sum .big.bad{color:var(--shu)}
+.sum small{font-size:.78rem;color:var(--muted)}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding-top:4px;font-weight:700;gap:8px}
+.total b{font-family:var(--f-display);font-size:1.4rem;color:var(--shu);font-variant-numeric:tabular-nums}
+
 .slip{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .field{padding:14px 18px;display:grid;gap:6px}
 .field label{font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between}
@@ -49,25 +102,50 @@ h1 small{display:block;font-size:.72rem;font-weight:500;color:var(--muted);lette
 .inrow input:focus-visible{box-shadow:0 2px 0 var(--ai)}
 .swap{display:flex;align-items:center;gap:10px;padding:0 18px}
 .swap hr{flex:1;border:none;border-top:1px dashed var(--line);margin:0}
-.swap button{border:1px solid var(--line);background:var(--paper);color:var(--ai);border-radius:999px;
-  width:34px;height:34px;font-size:1rem;cursor:pointer}
+.swap button{border:1px solid var(--line);background:var(--paper);color:var(--ai);border-radius:999px;width:34px;height:34px;font-size:1rem;cursor:pointer}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chips button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;
-  padding:7px 13px;font:500 .85rem var(--f-body);cursor:pointer;font-variant-numeric:tabular-nums}
+.chips button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:7px 13px;font:500 .85rem var(--f-body);cursor:pointer;font-variant-numeric:tabular-nums}
 .chips button:hover,.chips button:focus-visible{border-color:var(--ai);color:var(--ai);outline:none}
 .sect{display:grid;gap:8px}
 .sect h2{font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.08em;margin:0}
 .modes{display:grid;grid-template-columns:repeat(3,1fr);background:var(--ai-soft);border-radius:10px;padding:3px;gap:3px}
 .modes button{border:none;background:transparent;color:var(--muted);border-radius:8px;padding:8px 4px;font:500 .82rem var(--f-body);cursor:pointer}
 .modes button[aria-pressed="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.modes button:focus-visible{outline:2px solid var(--ai)}
-.note{font-size:.78rem;color:var(--muted);margin:0}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.9rem}
 td{padding:7px 0;border-bottom:1px solid var(--line)}
 td:last-child{text-align:right;font-weight:600}
-details{font-size:.85rem;color:var(--muted)}
-details summary{cursor:pointer}
-details .inrow input{font-size:1.1rem;text-align:left;border-bottom:1px solid var(--line)}
+details{font-size:.85rem;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+details summary{cursor:pointer;color:var(--ink);font-weight:600}
+details[open] summary{margin-bottom:10px}
+.setrow{display:grid;gap:6px;margin-bottom:12px}
+.setrow input{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:9px 10px;font:500 .9rem var(--f-body)}
+.setrow .row{display:flex;gap:8px}
+.setrow .row input{flex:1;min-width:0}
+a{color:var(--ai)}
+.install{display:flex;gap:10px;align-items:center;justify-content:space-between}
+
+/* Live camera, full screen */
+.cam{position:fixed;inset:0;z-index:50;background:#000;display:flex;flex-direction:column;color:#fff}
+.cam-view{position:relative;flex:1;overflow:hidden}
+.cam-view video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.guide{position:absolute;left:6%;right:6%;top:26%;height:30%;border:2px solid rgba(255,255,255,.9);border-radius:12px;
+  box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+.guide::after{content:"가격이 이 칸에 들어오게 비춰 주세요";position:absolute;left:0;right:0;top:calc(100% + 8px);text-align:center;font-size:.8rem;opacity:.9}
+.cam-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;
+  padding:max(12px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 12px max(14px,env(safe-area-inset-left,0px));gap:10px}
+.cam-top button{background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 14px;font:600 .85rem var(--f-body);cursor:pointer}
+.cam-state{font-size:.78rem;background:rgba(0,0,0,.55);padding:5px 10px;border-radius:999px}
+.cam-panel{background:#111628;padding:14px max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px}
+.cam-read{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.cam-read .k{font-family:var(--f-display);font-weight:900;font-size:2.3rem;line-height:1.05;font-variant-numeric:tabular-nums;color:#fff}
+.cam-read .y{font-size:1rem;color:#aab3d6;font-variant-numeric:tabular-nums;text-align:right}
+.cam-cands{display:flex;gap:6px;flex-wrap:wrap;min-height:30px}
+.cam-cands button{background:#232a45;color:#dfe4f7;border:1px solid #3a4470;border-radius:999px;padding:5px 11px;font:600 .82rem var(--f-body);cursor:pointer;font-variant-numeric:tabular-nums}
+.cam-cands button[aria-pressed="true"]{background:#dfe4f7;color:#111628}
+.cam-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.cam-actions button{background:#232a45;color:#fff;border:1px solid #3a4470;border-radius:10px;padding:11px 6px;font:600 .85rem var(--f-body);cursor:pointer}
+.cam-actions button[aria-pressed="true"]{background:#8fa6e6;color:#111628;border-color:#8fa6e6}
+.cam-hint{font-size:.75rem;color:#aab3d6;margin:0}
 </style>
 </head>
 <body>
@@ -81,6 +159,28 @@ details .inrow input{font-size:1.1rem;text-align:left;border-bottom:1px solid va
     <div class="lbl" id="rateLbl">매매기준율 · 100엔당</div>
     <div class="val"><span id="rate100">841.62</span> <span>원</span></div>
     <div class="meta"><i class="dot" id="dot"></i><span id="rateTime"></span><span id="rateSrc"></span></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>가격표 비추기</h2><span class="note">가격표 · 메뉴판 · 영수증</span></div>
+    <div class="tools">
+      <button class="btn primary" id="liveBtn" type="button">실시간 카메라<small>비추면 바로 원화</small></button>
+      <label class="btn" id="photoBtn">사진 분석<small id="photoSub">찍거나 앨범에서</small><input id="photoIn" type="file" accept="image/*"></label>
+    </div>
+    <div class="status" id="status" hidden>
+      <img id="thumb" alt="분석한 사진">
+      <div class="grow" id="statusMsg"></div>
+      <button type="button" class="small-btn" id="stopBtn" hidden>중지</button>
+    </div>
+    <p class="err" id="err" hidden></p>
+    <div id="out" hidden>
+      <label class="opt"><input type="checkbox" id="taxIn" checked> 세금 별도(税抜) 가격은 세금 포함으로 계산</label>
+      <div class="sum" id="sumBox" hidden></div>
+      <div class="items" id="items"></div>
+      <div class="total" id="totalRow" hidden><span id="totalLbl">합계</span><b id="totalKrw"></b></div>
+      <p class="note" id="outNote"></p>
+    </div>
+    <p class="note" id="toolHint">실시간 카메라는 휴대폰 안에서 숫자를 읽어서 무료예요. 사진 분석에서 상품 이름 번역과 한국 가격 비교까지 하려면 아래 설정에 Claude API 키를 넣어 주세요.</p>
   </section>
 
   <div class="slip">
@@ -119,27 +219,73 @@ details .inrow input{font-size:1.1rem;text-align:left;border-bottom:1px solid va
     <table id="tbl"></table>
   </div>
 
-  <details>
-    <summary>환율 직접 입력</summary>
-    <div class="inrow" style="margin-top:8px"><span>100엔 =</span><input id="manual" inputmode="decimal" placeholder="예: 845.20"><span>원</span></div>
-    <p class="note">입력하면 이 기기에서만 수동 환율을 씁니다. 비우면 자동 환율로 돌아갑니다.</p>
+  <details id="settings">
+    <summary>설정</summary>
+    <div class="setrow">
+      <label for="apiKey">Claude API 키 (사진 분석용, 선택)</label>
+      <div class="row"><input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."><button type="button" class="small-btn" id="keyClear">지우기</button></div>
+      <p class="note">키는 이 휴대폰에만 저장되고 Anthropic 서버로만 보내져요. 사진을 분석할 때마다 키 주인에게 API 요금이 나가요. 키는 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>에서 만들 수 있어요. 다른 사람과 키를 나눠 쓰지 마세요.</p>
+    </div>
+    <div class="setrow">
+      <label for="manual">환율 직접 입력 (100엔당 원)</label>
+      <input id="manual" inputmode="decimal" placeholder="예: 845.20">
+      <p class="note">입력하면 이 휴대폰에서만 수동 환율을 써요. 비우면 자동 환율로 돌아가요.</p>
+    </div>
   </details>
+
+  <div class="install" id="installRow" hidden>
+    <p class="note">홈 화면에 추가하면 앱처럼 바로 열 수 있어요.</p>
+    <button type="button" class="small-btn" id="installBtn">홈 화면에 추가</button>
+  </div>
+  <p class="note" id="iosHint" hidden>iPhone은 Safari 아래 공유 버튼 → "홈 화면에 추가"로 설치할 수 있어요.</p>
 </div>
 
+<!-- Live camera screen -->
+<div class="cam" id="cam" hidden>
+  <div class="cam-view">
+    <video id="video" playsinline muted></video>
+    <div class="guide" id="guide"></div>
+    <div class="cam-top">
+      <button type="button" id="camClose">닫기</button>
+      <span class="cam-state" id="camState">카메라 준비 중</span>
+    </div>
+  </div>
+  <div class="cam-panel">
+    <div class="cam-read" aria-live="polite">
+      <div class="k" id="camKrw">₩ –</div>
+      <div class="y" id="camYen">가격을 찾는 중</div>
+    </div>
+    <div class="cam-cands" id="camCands"></div>
+    <div class="cam-actions">
+      <button type="button" id="camHold" aria-pressed="false">멈춤</button>
+      <button type="button" id="camTax" aria-pressed="false">+세금 10%</button>
+      <button type="button" id="camUse">계산기에 넣기</button>
+    </div>
+    <p class="cam-hint">숫자가 여러 개면 가장 크게 보이는 숫자를 먼저 골라요. 아래 숫자를 눌러 바꿀 수 있어요.</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
 <script>
-// 자동 환율을 못 불러올 때 쓰는 값
-const FALLBACK = { per100: 841.62, asOf: "2026-10-27T13:57:00+09:00", note: "Investing.com (고정값)" };
+const $ = id => document.getElementById(id);
+const num = s => parseFloat(String(s).replace(/[^\d.]/g, "")) || 0;
+const fmt = (n, d = 0) => (Math.round(n * 10 ** d) / 10 ** d).toLocaleString("ko-KR", { maximumFractionDigits: d });
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+};
+
+/* ---------- Rate ---------- */
+const FALLBACK = { per100: 841.62, asOf: "2026-10-28T16:57:00+09:00", note: "저장된 값" };
 const MODES = {
   base: { k: 1, lbl: "매매기준율", note: "은행 고시 기준 환율 그대로 계산합니다." },
   cash: { k: 1.0175, lbl: "현찰 살 때", note: "환전 수수료 약 1.75%를 더한 추정치입니다. 우대율에 따라 낮아집니다." },
   card: { k: 1.01, lbl: "카드 결제", note: "해외결제 수수료 약 1%를 더한 추정치입니다. 카드사마다 다릅니다." }
 };
 let auto = { ...FALLBACK };
-let manual = null, mode = "base", dir = "jpy";
-try { const m = parseFloat(localStorage.getItem("manualRate")); if (m > 0) manual = m; } catch (e) {}
-const $ = id => document.getElementById(id);
-const num = s => parseFloat(String(s).replace(/[^\d.]/g, "")) || 0;
-const fmt = (n, d = 0) => n.toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+try { const c = JSON.parse(store.get("lastRate")); if (c && c.per100 > 0) auto = c; } catch (e) {}
+let manual = num(store.get("manualRate")) || null, mode = "base", dir = "jpy";
 const perYen = () => (manual || auto.per100) / 100 * MODES[mode].k;
 
 function renderRate() {
@@ -148,65 +294,407 @@ function renderRate() {
   $("rateLbl").textContent = MODES[mode].lbl + " · 100엔당";
   if (manual) { $("rateTime").textContent = "직접 입력한 환율"; $("dot").className = "dot stale"; $("rateSrc").textContent = ""; return; }
   const t = new Date(auto.asOf);
-  const ageH = (Date.now() - t) / 36e5;
   $("rateTime").textContent = isNaN(t) ? "" : t.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) + " 기준";
   $("rateSrc").textContent = auto.note ? "· " + auto.note : "";
-  $("dot").className = ageH < 30 ? "dot" : "dot stale";
+  $("dot").className = (Date.now() - t) / 36e5 < 30 ? "dot" : "dot stale";
+}
+async function loadRate() {
+  const sources = [
+    async () => {
+      const d = await (await fetch("https://open.er-api.com/v6/latest/JPY", { cache: "no-store" })).json();
+      if (d.result === "success" && d.rates?.KRW > 0) return { per100: d.rates.KRW * 100, asOf: new Date(d.time_last_update_unix * 1000).toISOString(), note: "ExchangeRate-API" };
+    },
+    async () => {
+      const d = await (await fetch("https://api.frankfurter.app/latest?from=JPY&to=KRW", { cache: "no-store" })).json();
+      if (d.rates?.KRW > 0) return { per100: d.rates.KRW * 100, asOf: d.date + "T16:00:00+01:00", note: "유럽중앙은행" };
+    },
+    async () => {
+      const d = await (await fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/jpy.json", { cache: "no-store" })).json();
+      if (d.jpy?.krw > 0) return { per100: d.jpy.krw * 100, asOf: d.date + "T09:00:00+09:00", note: "currency-api" };
+    }
+  ];
+  for (const s of sources) {
+    try {
+      const r = await s();
+      if (r) { r.per100 = Math.round(r.per100 * 100) / 100; auto = r; store.set("lastRate", JSON.stringify(r)); renderRate(); calc(); return; }
+    } catch (e) {}
+  }
+}
+
+/* ---------- Calculator ---------- */
+function fit(el) {
+  el.style.fontSize = "";
+  let s = parseFloat(getComputedStyle(el).fontSize);
+  while (el.scrollWidth > el.clientWidth + 1 && s > 14) { s -= 1; el.style.fontSize = s + "px"; }
 }
 function calc() {
   const r = perYen();
   if (dir === "jpy") $("krw").value = fmt(num($("jpy").value) * r);
   else $("jpy").value = fmt(num($("krw").value) / r);
-  $("tbl").innerHTML = [1000, 2000, 5000, 10000].map(y =>
-    `<tr><td>¥${fmt(y)} 지폐</td><td>₩${fmt(y * r)}</td></tr>`).join("");
+  $("tbl").innerHTML = [1000, 2000, 5000, 10000].map(y => `<tr><td>¥${fmt(y)} 지폐</td><td>₩${fmt(y * r)}</td></tr>`).join("");
+  fit($("jpy")); fit($("krw"));
+  renderScan();
 }
 function reformat(el) {
   const raw = el.value.replace(/[^\d.]/g, "");
   const [i, d] = raw.split(".");
   el.value = (i ? fmt(+i) : "") + (d !== undefined ? "." + d.slice(0, 2) : "");
 }
+function setYen(y) {
+  dir = "jpy"; $("jpy").value = fmt(y); calc();
+  document.querySelector(".slip").scrollIntoView({ behavior: "smooth", block: "center" });
+}
 $("jpy").addEventListener("input", e => { dir = "jpy"; reformat(e.target); calc(); });
 $("krw").addEventListener("input", e => { dir = "krw"; reformat(e.target); calc(); });
 $("swapBtn").addEventListener("click", () => { dir = dir === "jpy" ? "krw" : "jpy"; $(dir).focus(); $(dir).select(); });
-$("chips").addEventListener("click", e => {
-  const y = e.target.dataset.y; if (!y) return;
-  dir = "jpy"; $("jpy").value = fmt(+y); calc();
-});
+$("chips").addEventListener("click", e => { const y = e.target.dataset.y; if (y) { dir = "jpy"; $("jpy").value = fmt(+y); calc(); } });
 $("modes").addEventListener("click", e => {
   const m = e.target.dataset.m; if (!m) return;
   mode = m;
   document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m));
   $("modeNote").textContent = MODES[m].note;
-  renderRate(); calc();
+  renderRate(); calc(); paintCam();
 });
-$("manual").value = manual ? manual : "";
+$("manual").value = manual || "";
 $("manual").addEventListener("input", e => {
-  const v = num(e.target.value);
-  manual = v > 0 ? v : null;
-  try { manual ? localStorage.setItem("manualRate", v) : localStorage.removeItem("manualRate"); } catch (err) {}
-  renderRate(); calc();
+  const v = num(e.target.value); manual = v > 0 ? v : null;
+  store.set("manualRate", manual ? String(v) : null);
+  renderRate(); calc(); paintCam();
 });
-renderRate(); calc();
+window.addEventListener("resize", () => { fit($("jpy")); fit($("krw")); });
 
-// 페이지를 열 때마다 무료 환율 API에서 최신 값을 불러옴 (실패하면 위 고정값 사용)
-(async () => {
-  try {
-    const r = await fetch("https://open.er-api.com/v6/latest/JPY");
-    const d = await r.json();
-    if (d.result === "success" && d.rates && d.rates.KRW > 0) {
-      auto = { per100: Math.round(d.rates.KRW * 10000) / 100, asOf: new Date(d.time_last_update_unix * 1000).toISOString(), note: "ExchangeRate-API" };
-      renderRate(); calc(); return;
+/* ---------- OCR (Tesseract, runs on the phone) ---------- */
+let workerP = null;
+function getWorker(onProgress) {
+  if (!workerP) {
+    workerP = (async () => {
+      for (let i = 0; i < 100 && !window.Tesseract; i++) await new Promise(r => setTimeout(r, 100));
+      if (!window.Tesseract) throw new Error("ocr_unavailable");
+      const w = await Tesseract.createWorker("eng", 1, {
+        ...(window.TESS_OPTS || {}),
+        logger: m => onProgress && onProgress(m)
+      });
+      await w.setParameters({ tessedit_pageseg_mode: "11" }); // sparse text: find numbers anywhere
+      return w;
+    })();
+    workerP.catch(() => { workerP = null; });
+  }
+  return workerP;
+}
+// Pull price-like numbers out of OCR words, biggest text first.
+function pricesFrom(data) {
+  const words = data.words || [];
+  const found = [];
+  const UNIT = /^(ml|g|kg|mg|cm|mm|l|%|w|v|mah|gb|tb|p|pcs|個|枚|本|入|年|月|日|時|分|号)/i;
+  words.forEach((w, i) => {
+    const t = w.text.replace(/(?<=\d)[oO]|[oO](?=\d)/g, "0").replace(/(?<=\d)[lI|]|[lI|](?=\d)/g, "1");
+    const re = /\d{1,3}(?:[,.]\d{3})+|\d+/g;
+    let m;
+    while ((m = re.exec(t))) {
+      const s = m[0], after = t.slice(m.index + s.length), before = t.slice(0, m.index);
+      if (UNIT.test(after) || (!after && UNIT.test(words[i + 1]?.text || "")) || /[\d:\/-]$/.test(before)) continue; // 20ml, 20 ml, 12:30, 3/4
+      if (!s.includes(",") && s.length > 6) continue;                   // phone numbers, dates
+      const v = parseInt(s.replace(/[,.]/g, ""), 10);
+      if (!(v >= 10 && v <= 9999999)) continue;
+      if (!s.includes(",") && v >= 1990 && v <= 2035 && /^\D*$/.test(after)) continue; // a year
+      const h = w.bbox.y1 - w.bbox.y0;
+      // 円 is often read as M, F, H, A after the digits
+      const yenMark = /[¥¥円]/.test(t) || /^[MFHARr]/.test(after) || /[¥¥\\Y]$/.test(before) || /^[¥¥円]/.test(words[i + 1]?.text || "");
+      if (w.confidence < 12 && !s.includes(",") && !yenMark) continue; // low-confidence noise
+      found.push({ yen: v, h: h * (yenMark ? 1.3 : 1) * (s.includes(",") ? 1.15 : 1) * (w.confidence < 30 ? 0.9 : 1) });
     }
-  } catch (e) {}
+  });
+  const best = new Map();
+  found.forEach(f => { const b = best.get(f.yen); if (!b || f.h > b.h) best.set(f.yen, f); });
+  return [...best.values()].sort((a, b) => b.h - a.h);
+}
+
+/* ---------- Live camera ---------- */
+let stream = null, camOn = false, hold = false, tax = false, camPick = null, camCands = [], busy = false, userPicked = false;
+function paintCam() {
+  if (!camOn) return;
+  const y = camPick ? Math.floor(camPick * (tax ? 1.1 : 1)) : 0;
+  $("camKrw").textContent = y ? "₩" + fmt(y * perYen()) : "₩ –";
+  $("camYen").textContent = y ? `¥${fmt(y)}${tax ? " (세금 포함)" : ""}` : "가격을 찾는 중";
+  $("camCands").innerHTML = camCands.slice(0, 5).map(c => `<button type="button" data-y="${c.yen}" aria-pressed="${c.yen === camPick}">¥${fmt(c.yen)}</button>`).join("");
+}
+async function openCam() {
+  $("err").hidden = true;
+  if (!navigator.mediaDevices?.getUserMedia) { showErr("이 브라우저에서는 카메라를 쓸 수 없어요. Chrome이나 Safari로 열어 주세요."); return; }
   try {
-    const r = await fetch("https://api.frankfurter.app/latest?from=JPY&to=KRW");
-    const d = await r.json();
-    if (d.rates && d.rates.KRW > 0) {
-      auto = { per100: Math.round(d.rates.KRW * 10000) / 100, asOf: d.date + "T16:00:00+01:00", note: "ECB (Frankfurter)" };
-      renderRate(); calc();
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+  } catch (e) {
+    showErr(e.name === "NotAllowedError" ? "카메라 권한이 꺼져 있어요. 브라우저 주소창의 자물쇠 아이콘에서 카메라를 허용해 주세요." : "카메라를 열 수 없어요. 다른 앱이 카메라를 쓰고 있는지 확인해 주세요.");
+    return;
+  }
+  $("cam").hidden = false; document.body.style.overflow = "hidden";
+  const v = $("video"); v.srcObject = stream; await v.play().catch(() => {});
+  camOn = true; hold = false; camPick = null; camCands = []; userPicked = false;
+  $("camHold").setAttribute("aria-pressed", "false"); $("camHold").textContent = "멈춤";
+  paintCam();
+  $("camState").textContent = "글자 인식기 불러오는 중";
+  try {
+    await getWorker(m => { if (m.status && camOn && m.progress < 1) $("camState").textContent = "인식기 준비 " + Math.round((m.progress || 0) * 100) + "%"; });
+  } catch (e) { $("camState").textContent = "인식기를 불러오지 못했어요. 인터넷 연결을 확인해 주세요."; return; }
+  $("camState").textContent = "인식 중";
+  loop();
+}
+function closeCam() {
+  camOn = false;
+  stream?.getTracks().forEach(t => t.stop()); stream = null;
+  $("cam").hidden = true; document.body.style.overflow = "";
+}
+function cropGuide() {
+  const v = $("video"), vw = v.videoWidth, vh = v.videoHeight;
+  if (!vw) return null;
+  const box = v.getBoundingClientRect(), g = $("guide").getBoundingClientRect();
+  const s = Math.max(box.width / vw, box.height / vh);
+  const ox = (box.width - vw * s) / 2, oy = (box.height - vh * s) / 2;
+  const sx = (g.left - box.left - ox) / s, sy = (g.top - box.top - oy) / s, sw = g.width / s, sh = g.height / s;
+  const scale = Math.min(2, 1400 / sw);
+  const c = document.createElement("canvas");
+  c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
+  const ctx = c.getContext("2d");
+  ctx.filter = "grayscale(1) contrast(1.4)";
+  ctx.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  return c;
+}
+async function loop() {
+  while (camOn) {
+    if (hold || document.hidden || busy) { await new Promise(r => setTimeout(r, 300)); continue; }
+    const c = cropGuide();
+    if (!c) { await new Promise(r => setTimeout(r, 200)); continue; }
+    busy = true;
+    try {
+      const w = await getWorker();
+      const { data } = await w.recognize(c);
+      if (!camOn || hold) { busy = false; continue; }
+      const p = pricesFrom(data);
+      if (p.length) {
+        camCands = p;
+        // the biggest number wins, unless the user tapped another one
+        if (!userPicked || !p.some(x => x.yen === camPick)) { camPick = p[0].yen; userPicked = false; }
+        $("camState").textContent = "인식 중";
+      } else $("camState").textContent = "숫자가 안 보여요 · 더 가까이";
+      paintCam();
+    } catch (e) {}
+    busy = false;
+    await new Promise(r => setTimeout(r, 250));
+  }
+}
+$("liveBtn").addEventListener("click", openCam);
+$("camClose").addEventListener("click", closeCam);
+$("camHold").addEventListener("click", () => {
+  hold = !hold; $("camHold").setAttribute("aria-pressed", hold); $("camHold").textContent = hold ? "계속" : "멈춤";
+  $("camState").textContent = hold ? "멈춤" : "인식 중";
+});
+$("camTax").addEventListener("click", () => { tax = !tax; $("camTax").setAttribute("aria-pressed", tax); paintCam(); });
+$("camCands").addEventListener("click", e => { const y = e.target.dataset.y; if (y) { camPick = +y; userPicked = true; hold = true; $("camHold").setAttribute("aria-pressed", "true"); $("camHold").textContent = "계속"; $("camState").textContent = "멈춤"; paintCam(); } });
+$("camUse").addEventListener("click", () => { if (!camPick) return; const y = Math.floor(camPick * (tax ? 1.1 : 1)); closeCam(); setYen(y); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && camOn) closeCam(); });
+
+/* ---------- Photo analysis ---------- */
+let scan = null, ctl = null;
+const yenOf = it => {
+  const y = Math.round(+it.yen || 0);
+  if ($("taxIn").checked && it.tax === "excl") return Math.floor(y * (1 + (it.taxRate === 8 ? 0.08 : 0.10)));
+  return y;
+};
+function showErr(msg) { $("err").textContent = msg; $("err").hidden = false; }
+function renderScan() {
+  if (!scan) return;
+  const r = perYen(), list = scan.items;
+  $("out").hidden = false;
+  $("outNote").textContent = scan.ai
+    ? "한국 가격은 Claude가 추정한 일반 소비자가예요. 실제로 본 가격으로 고치면 바로 다시 비교해요. 이름이나 금액을 누르면 계산기에 넣어 줘요."
+    : "API 키 없이 숫자만 읽었어요. 큰 글씨 순서예요. 한국 가격을 넣으면 비교해 주고, 금액을 누르면 계산기에 넣어 줘요.";
+  $("taxIn").parentElement.hidden = !scan.ai;
+  if (!list.length) { $("items").innerHTML = `<p class="note">사진에서 엔화 가격을 찾지 못했어요. 가격이 크게 보이도록 다시 찍어 보세요.</p>`; $("totalRow").hidden = true; $("sumBox").hidden = true; return; }
+  $("items").innerHTML = list.map((it, i) => {
+    const y = yenOf(it);
+    const tag = it.tax === "excl" ? ($("taxIn").checked ? `<span class="tag">세금 ${it.taxRate === 8 ? 8 : 10}% 포함</span>` : `<span class="tag">税抜</span>`) : it.tax === "incl" ? `<span class="tag">税込</span>` : "";
+    return `<div class="item" data-i="${i}">
+      <button class="item-main" type="button">
+        <span class="nm">${esc(it.name_ko || it.name_ja || "가격 " + (i + 1))}${tag}</span>
+        <span class="won">₩${fmt(y * r)}</span>
+        <span class="ja">${esc(it.name_ja && it.name_ja !== it.name_ko ? it.name_ja : "")}</span>
+        <span class="yen">¥${fmt(y)}${it.qty > 1 ? " × " + it.qty : ""}</span>
+      </button>
+      <div class="cmp">
+        <label class="ko">한국 ₩<input data-i="${i}" inputmode="numeric" placeholder="가격 입력" value="${it.ko > 0 ? fmt(it.ko) : ""}" aria-label="한국 가격"></label>
+        <span class="verdict" id="vd${i}"></span>
+        ${it.ko_basis || it.koEdited ? `<span class="basis">${it.koEdited ? "직접 입력한 가격" : "추정 근거: " + esc(it.ko_basis)}</span>` : ""}
+      </div></div>`;
+  }).join("");
+  list.forEach((it, i) => paintVerdict(i));
+  paintSum();
+  const showTotal = scan.ai && (scan.kind === "receipt" || list.length > 1);
+  $("totalRow").hidden = !showTotal;
+  if (showTotal) {
+    const rec = scan.kind === "receipt" && scan.total_yen > 0;
+    const totY = rec ? Math.round(scan.total_yen) : list.reduce((s, it) => s + yenOf(it) * (it.qty > 1 ? it.qty : 1), 0);
+    $("totalKrw").textContent = "₩" + fmt(totY * r);
+    $("totalLbl").textContent = (rec ? "영수증 합계" : "전체 합계") + ` · ¥${fmt(totY)}`;
+  }
+}
+function paintVerdict(i) {
+  const it = scan.items[i], el = $("vd" + i); if (!el) return;
+  const jp = yenOf(it) * perYen();
+  if (!(it.ko > 0)) { el.className = "verdict none"; el.textContent = "한국 가격을 넣으면 비교해요"; return; }
+  const diff = it.ko - jp, pct = Math.round(Math.abs(diff) / it.ko * 100);
+  if (pct < 3) { el.className = "verdict even"; el.textContent = "한국과 비슷해요"; return; }
+  el.className = "verdict " + (diff > 0 ? "good" : "bad");
+  el.textContent = diff > 0 ? `일본이 ${pct}% 싸요 · ₩${fmt(diff)} 이득` : `한국이 ${pct}% 싸요 · ₩${fmt(-diff)} 더 비쌈`;
+}
+function paintSum() {
+  const box = $("sumBox"), cmp = scan.items.filter(it => it.ko > 0);
+  if (!cmp.length) { box.hidden = true; return; }
+  const r = perYen(); let jpT = 0, koT = 0;
+  cmp.forEach(it => { const q = it.qty > 1 ? it.qty : 1; jpT += yenOf(it) * r * q; koT += it.ko * q; });
+  const d = koT - jpT, pct = Math.round(Math.abs(d) / koT * 100);
+  box.hidden = false;
+  box.innerHTML = `<small>${cmp.length}개 항목, ${MODES[mode].lbl} 기준</small>
+    <span class="big ${d >= 0 ? "good" : "bad"}">${d >= 0 ? `일본에서 사면 ₩${fmt(d)} 이득` : `한국에서 사면 ₩${fmt(-d)} 이득`}</span>
+    <small>일본 ₩${fmt(jpT)} · 한국 ₩${fmt(koT)} · ${pct}% 차이</small>`;
+}
+$("items").addEventListener("input", e => {
+  const inp = e.target.closest(".ko input"); if (!inp || !scan) return;
+  reformat(inp);
+  const i = +inp.dataset.i, it = scan.items[i];
+  it.ko = num(inp.value) || null; it.koEdited = true;
+  const cmp = inp.closest(".cmp");
+  let b = cmp.querySelector(".basis");
+  if (!b) { b = document.createElement("span"); b.className = "basis"; cmp.append(b); }
+  b.textContent = "직접 입력한 가격";
+  paintVerdict(i); paintSum();
+});
+$("items").addEventListener("click", e => {
+  const b = e.target.closest(".item-main") && e.target.closest(".item"); if (!b || !scan) return;
+  setYen(yenOf(scan.items[+b.dataset.i]));
+});
+$("taxIn").addEventListener("change", renderScan);
+$("stopBtn").addEventListener("click", () => ctl?.abort());
+
+const PROMPT = `이 사진은 일본에서 찍은 가격표, 메뉴판, 영수증 또는 상품 사진이다. 사진 속 일본 엔화 가격을 모두 읽어라(최대 25개).
+각 항목에 대해:
+- name_ja: 사진에 적힌 상품/메뉴 이름 그대로 (없으면 빈 문자열)
+- name_ko: 한국어로 자연스럽게 번역한 이름 (짧게)
+- yen: 엔화 금액 정수 (쉼표·円·¥ 제거)
+- qty: 수량 (영수증에 2点, ×2 등이 있으면 그 수, 아니면 1). yen은 1개 단가.
+- tax: "incl"(税込/内税 표시 또는 영수증), "excl"(税抜/本体価格/+税 표시), "unknown"
+- taxRate: 8(식품·테이크아웃 경감세율 표시 ※ 등) 또는 10, 모르면 10
+- ko_price: 같은 상품을 한국에서 살 때의 일반적인 소비자 가격(원, 정수, 1개 기준). 같은 상품이 한국에 없으면 가장 비슷한 국내 상품·메뉴의 가격. 대략값. 정말 짐작할 수 없으면 null.
+- ko_basis: ko_price의 근거를 15자 안팎으로 (예: "올리브영 정가", "서울 라멘집 평균", "국내 정식 수입가")
+같은 상품에 税抜와 税込 가격이 둘 다 있으면 税込 가격 하나만 넣고 tax를 "incl"로 한다.
+kind: "receipt" | "menu" | "pricetag" | "other". 영수증이면 total_yen에 合計 금액, 아니면 null.
+가격이 없으면 items는 빈 배열.
+JSON만 답하라. 예: {"kind":"menu","items":[{"name_ja":"醤油ラーメン","name_ko":"쇼유 라멘","yen":980,"qty":1,"tax":"incl","taxRate":10,"ko_price":11000,"ko_basis":"서울 라멘집 평균"}],"total_yen":null}`;
+
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("bad_image"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+function shrink(img, max) {
+  const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+async function askClaude(canvas, key, signal) {
+  const data = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", signal,
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-5-5",
+      max_tokens: 3000,
+      messages: [{ role: "user", content: [
+        { type: "image", source: { type: "base64", media_type: "image/jpeg", data } },
+        { type: "text", text: PROMPT }
+      ] }]
+    })
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(body?.error?.message || "api_error"); e.status = res.status; throw e; }
+  const text = (body.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+  const a = text.indexOf("{"), b = text.lastIndexOf("}");
+  if (a < 0 || b < a) throw new Error("bad_json");
+  return JSON.parse(text.slice(a, b + 1));
+}
+async function analyze(file) {
+  if (!file) return;
+  $("err").hidden = true; $("status").hidden = false; $("toolHint").hidden = true;
+  $("thumb").src = URL.createObjectURL(file);
+  $("stopBtn").hidden = false; $("photoBtn").setAttribute("aria-disabled", "true");
+  ctl = new AbortController();
+  const key = (store.get("apiKey") || "").trim();
+  try {
+    const img = await loadImage(file);
+    if (key) {
+      $("statusMsg").innerHTML = `<span class="spin"></span>Claude가 사진을 읽는 중… (10~30초)`;
+      const res = await askClaude(shrink(img, 1568), key, ctl.signal);
+      const items = (Array.isArray(res?.items) ? res.items : []).filter(it => +it.yen > 0)
+        .map(it => ({ ...it, ko: Math.round(+it.ko_price) > 0 ? Math.round(+it.ko_price) : null }));
+      scan = { ai: true, kind: res?.kind || "other", items, total_yen: +res?.total_yen || null };
+    } else {
+      $("statusMsg").innerHTML = `<span class="spin"></span>숫자 읽는 중…`;
+      const w = await getWorker(m => { if (m.progress < 1 && m.status) $("statusMsg").innerHTML = `<span class="spin"></span>인식기 준비 ${Math.round((m.progress || 0) * 100)}%`; });
+      if (ctl.signal.aborted) throw Object.assign(new Error("aborted"), { name: "AbortError" });
+      $("statusMsg").innerHTML = `<span class="spin"></span>숫자 읽는 중…`;
+      const { data } = await w.recognize(shrink(img, 2000));
+      if (ctl.signal.aborted) throw Object.assign(new Error("aborted"), { name: "AbortError" });
+      scan = { ai: false, kind: "other", items: pricesFrom(data).slice(0, 8).map(p => ({ yen: p.yen, qty: 1, tax: "unknown", ko: null })) };
     }
-  } catch (e) {}
-})();
+    $("statusMsg").textContent = scan.items.length ? `${scan.items.length}개 가격을 찾았어요` : "가격을 찾지 못했어요";
+    renderScan();
+  } catch (e) {
+    if (e.name === "AbortError") $("statusMsg").textContent = "중지했어요";
+    else {
+      $("statusMsg").textContent = "읽기 실패";
+      showErr(e.status === 401 ? "API 키가 맞지 않아요. 설정에서 키를 다시 확인해 주세요."
+        : e.status === 429 ? "요청이 많아 잠시 쉬어야 해요. 조금 뒤에 다시 시도해 주세요."
+        : e.status === 400 && /credit/i.test(e.message) ? "API 크레딧이 부족해요. console.anthropic.com에서 충전해 주세요."
+        : e.message === "bad_image" ? "이 사진은 열 수 없어요. JPG나 PNG 사진으로 다시 시도해 주세요."
+        : e.message === "ocr_unavailable" ? "인식기를 불러오지 못했어요. 인터넷 연결을 확인해 주세요."
+        : e.message === "bad_json" ? "가격을 정리하지 못했어요. 다시 찍어 주세요."
+        : "연결에 문제가 있었어요. 다시 시도해 주세요.");
+    }
+  } finally {
+    $("stopBtn").hidden = true; $("photoBtn").removeAttribute("aria-disabled");
+  }
+}
+$("photoIn").addEventListener("change", e => { analyze(e.target.files[0]); e.target.value = ""; });
+
+/* ---------- Settings ---------- */
+function paintKey() {
+  const k = store.get("apiKey");
+  $("apiKey").value = k || "";
+  $("photoSub").textContent = k ? "이름 번역 · 한국가 비교" : "숫자만 읽기 (키 없음)";
+}
+$("apiKey").addEventListener("change", e => { store.set("apiKey", e.target.value.trim() || null); paintKey(); });
+$("keyClear").addEventListener("click", () => { store.set("apiKey", null); paintKey(); });
+
+/* ---------- Install as app ---------- */
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("installRow").hidden = false; });
+$("installBtn").addEventListener("click", async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $("installRow").hidden = true; });
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+if (/iPhone|iPad/.test(navigator.userAgent) && !standalone) $("iosHint").hidden = false;
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+paintKey(); renderRate(); calc(); loadRate();
+setInterval(() => { if (!document.hidden) loadRate(); }, 10 * 60 * 1000);
+document.fonts?.ready.then(() => { fit($("jpy")); fit($("krw")); });
 </script>
 </body>
 </html>
