@@ -147,6 +147,22 @@ a{color:var(--ai)}
 .cam-actions button{background:#232a45;color:#fff;border:1px solid #3a4470;border-radius:10px;padding:11px 6px;font:600 .85rem var(--f-body);cursor:pointer}
 .cam-actions button[aria-pressed="true"]{background:#8fa6e6;color:#111628;border-color:#8fa6e6}
 .cam-hint{font-size:.75rem;color:#aab3d6;margin:0}
+
+/* Purchase log (Supabase) */
+.log-form{display:grid;grid-template-columns:1fr auto;gap:8px}
+.log-form input{min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:10px 12px;font:500 .95rem var(--f-body)}
+.log-form input:focus-visible{outline:2px solid var(--ai);border-color:var(--ai)}
+.log-form button{border:none;border-radius:8px;background:var(--ai);color:var(--on-ai);padding:10px 16px;font:600 .9rem var(--f-body);cursor:pointer}
+.log-form button:disabled{opacity:.5;cursor:default}
+.log-preview{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.logs{display:grid}
+.log{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.log .when{font-size:.75rem;color:var(--muted)}
+.log .amt{text-align:right;font-variant-numeric:tabular-nums}
+.log .amt b{display:block;font-family:var(--f-display);font-weight:900;color:var(--ai)}
+.log .amt small{font-size:.75rem;color:var(--muted)}
+.log button{border:none;background:transparent;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:6px}
+.log button:hover,.log button:focus-visible{color:var(--shu);outline:none;background:var(--ai-soft)}
 </style>
 </head>
 <body>
@@ -195,6 +211,19 @@ a{color:var(--ai)}
       <div class="inrow"><span class="cur">₩</span><input id="krw" inputmode="decimal" autocomplete="off"></div>
     </div>
   </div>
+
+  <section class="card" id="logCard">
+    <div class="card-head"><h2>구매 기록</h2><span class="note" id="logState">연결 중…</span></div>
+    <form class="log-form" id="logForm">
+      <input id="logMemo" maxlength="60" placeholder="무엇을 샀나요? (예: 편의점 도시락)" autocomplete="off">
+      <button type="submit" id="logAdd" disabled>기록</button>
+    </form>
+    <p class="log-preview" id="logPreview"></p>
+    <div class="logs" id="logs"></div>
+    <div class="total" id="logTotalRow" hidden><span id="logTotalLbl">총 사용</span><b id="logTotal"></b></div>
+    <p class="err" id="logErr" hidden></p>
+    <p class="note">위 계산기의 엔화 금액과 지금 환율로 저장돼요. 이 휴대폰(브라우저)에서 쓴 기록만 보여요.</p>
+  </section>
 
   <div class="sect">
     <h2>자주 쓰는 금액</h2>
@@ -696,6 +725,100 @@ if ("serviceWorker" in navigator && location.protocol === "https:") navigator.se
 paintKey(); renderRate(); calc(); loadRate();
 setInterval(() => { if (!document.hidden) loadRate(); }, 10 * 60 * 1000);
 document.fonts?.ready.then(() => { fit($("jpy")); fit($("krw")); });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ---------- 구매 기록 (Supabase) ----------
+   아래 두 줄에 Supabase 프로젝트의 값을 붙여 넣으세요.
+   Supabase 대시보드 → 프로젝트 → 위쪽 "Connect" 버튼 (또는 Project Settings → API Keys)
+   - SUPABASE_URL: https://xxxx.supabase.co 형태의 Project URL
+   - SUPABASE_KEY: publishable key (sb_publishable_...) 또는 anon public key
+   이 키는 웹페이지에 공개돼도 괜찮은 키예요. (secret / service_role 키는 절대 넣지 마세요!) */
+const SUPABASE_URL = "https://avvmycgqrvpzkpzecbwr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_O_ndK-wY7oMYAf1B0oi6OA__chheIsz";
+
+(function () {
+  const ready = !SUPABASE_URL.startsWith("여기에") && !SUPABASE_KEY.startsWith("여기에");
+  let sb = null, rows = [];
+  const showErr = msg => { $("logErr").textContent = msg; $("logErr").hidden = !msg; };
+
+  function preview() {
+    const y = num($("jpy").value), k = y * perYen();
+    $("logPreview").textContent = y > 0 ? `저장될 금액: ¥${fmt(y)} → ₩${fmt(k)} (${MODES[mode].lbl}, 100엔 ${fmt((manual || auto.per100) * MODES[mode].k, 2)}원)` : "위 계산기에 엔화 금액을 먼저 넣어 주세요.";
+  }
+  ["jpy", "krw"].forEach(id => $(id).addEventListener("input", preview));
+  $("modes").addEventListener("click", preview);
+  $("chips").addEventListener("click", preview);
+  const _calc = calc; calc = function () { _calc(); preview(); };
+
+  function render() {
+    $("logs").innerHTML = rows.map(r => {
+      const d = new Date(r.created_at);
+      const when = d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      return `<div class="log"><div><div class="nm">${esc(r.memo || "메모 없음")}</div><div class="when">${when} · ${esc(r.rate_mode || "")}</div></div>
+        <div class="amt"><b>₩${fmt(+r.krw)}</b><small>¥${fmt(+r.yen)}</small></div>
+        <button type="button" data-id="${r.id}" aria-label="${esc(r.memo || "기록")} 삭제">×</button></div>`;
+    }).join("") || `<p class="note">아직 기록이 없어요. 계산기에 금액을 넣고 "기록"을 눌러 보세요.</p>`;
+    const sumK = rows.reduce((s, r) => s + +r.krw, 0), sumY = rows.reduce((s, r) => s + +r.yen, 0);
+    $("logTotalRow").hidden = !rows.length;
+    $("logTotalLbl").textContent = `총 ${rows.length}건 · ¥${fmt(sumY)}`;
+    $("logTotal").textContent = "₩" + fmt(sumK);
+  }
+
+  async function load() {
+    const { data, error } = await sb.from("purchases").select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    rows = data || []; render();
+  }
+
+  async function start() {
+    preview();
+    if (!ready) { $("logState").textContent = "Supabase 연결 전"; $("logs").innerHTML = `<p class="note">index.html 아래쪽의 SUPABASE_URL, SUPABASE_KEY를 채우면 기록 기능이 켜져요.</p>`; return; }
+    if (!window.supabase) { $("logState").textContent = "오프라인"; showErr("기록 기능을 불러오지 못했어요. 인터넷 연결을 확인해 주세요."); return; }
+    try {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      let { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        const { error } = await sb.auth.signInAnonymously();
+        if (error) throw error;
+      }
+      await load();
+      $("logState").textContent = "저장됨 · Supabase";
+      $("logAdd").disabled = false;
+    } catch (e) {
+      $("logState").textContent = "연결 실패";
+      const m = String(e?.message || e);
+      showErr(/anonymous/i.test(m) ? "Supabase에서 익명 로그인(Anonymous sign-ins)이 꺼져 있어요. Authentication 설정에서 켜 주세요."
+        : /relation|does not exist|schema cache/i.test(m) ? "purchases 테이블이 없어요. SQL Editor에서 테이블 만들기 코드를 실행해 주세요."
+        : "Supabase 연결 오류: " + m);
+    }
+  }
+
+  $("logForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const y = num($("jpy").value);
+    if (!sb || !(y > 0)) { preview(); return; }
+    showErr("");
+    $("logAdd").disabled = true;
+    const row = { memo: $("logMemo").value.trim() || null, yen: y, krw: Math.round(y * perYen()),
+      rate_per100: Math.round((manual || auto.per100) * MODES[mode].k * 100) / 100, rate_mode: MODES[mode].lbl };
+    const { data, error } = await sb.from("purchases").insert(row).select().single();
+    $("logAdd").disabled = false;
+    if (error) { showErr("저장하지 못했어요: " + error.message); return; }
+    rows.unshift(data); render(); $("logMemo").value = "";
+  });
+
+  $("logs").addEventListener("click", async e => {
+    const id = e.target.closest("button[data-id]")?.dataset.id; if (!id || !sb) return;
+    const r = rows.find(x => String(x.id) === id);
+    if (!confirm(`"${r?.memo || "이 기록"}"을(를) 삭제할까요?`)) return;
+    const { error } = await sb.from("purchases").delete().eq("id", id);
+    if (error) { showErr("삭제하지 못했어요: " + error.message); return; }
+    rows = rows.filter(x => String(x.id) !== id); render();
+  });
+
+  start();
+})();
 </script>
 </body>
 </html>
