@@ -339,6 +339,7 @@ async function loadRate() {
       if (d.rates?.KRW > 0) return { per100: d.rates.KRW * 100, asOf: d.date + "T16:00:00+01:00", note: "유럽중앙은행" };
     },
     async () => {
+      // 이 API는 매일 새 버전으로 환율을 올려요. 버전을 고정하면 환율이 그날에 멈추므로 @latest가 맞아요.
       const d = await (await fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/jpy.json", { cache: "no-store" })).json();
       if (d.jpy?.krw > 0) return { per100: d.jpy.krw * 100, asOf: d.date + "T09:00:00+09:00", note: "currency-api" };
     }
@@ -364,6 +365,8 @@ function calc() {
   $("tbl").innerHTML = [1000, 2000, 5000, 10000].map(y => `<tr><td>¥${fmt(y)} 지폐</td><td>₩${fmt(y * r)}</td></tr>`).join("");
   fit($("jpy")); fit($("krw"));
   renderScan();
+  // 계산이 끝날 때마다 알림. 다른 기능(구매 기록 미리보기 등)은 calc를 덮어쓰지 말고 이 알림을 들으세요.
+  document.dispatchEvent(new Event("calc"));
 }
 function reformat(el) {
   const raw = el.value.replace(/[^\d.]/g, "");
@@ -726,7 +729,7 @@ paintKey(); renderRate(); calc(); loadRate();
 setInterval(() => { if (!document.hidden) loadRate(); }, 10 * 60 * 1000);
 document.fonts?.ready.then(() => { fit($("jpy")); fit($("krw")); });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
 /* ---------- 구매 기록 (Supabase) ----------
    아래 두 줄에 Supabase 프로젝트의 값을 붙여 넣으세요.
@@ -746,10 +749,7 @@ const SUPABASE_KEY = "sb_publishable_O_ndK-wY7oMYAf1B0oi6OA__chheIsz";
     const y = num($("jpy").value), k = y * perYen();
     $("logPreview").textContent = y > 0 ? `저장될 금액: ¥${fmt(y)} → ₩${fmt(k)} (${MODES[mode].lbl}, 100엔 ${fmt((manual || auto.per100) * MODES[mode].k, 2)}원)` : "위 계산기에 엔화 금액을 먼저 넣어 주세요.";
   }
-  ["jpy", "krw"].forEach(id => $(id).addEventListener("input", preview));
-  $("modes").addEventListener("click", preview);
-  $("chips").addEventListener("click", preview);
-  const _calc = calc; calc = function () { _calc(); preview(); };
+  document.addEventListener("calc", preview); // 금액·환율이 바뀌어 calc()가 돌 때마다 미리보기 갱신
 
   function render() {
     $("logs").innerHTML = rows.map(r => {
@@ -786,8 +786,14 @@ const SUPABASE_KEY = "sb_publishable_O_ndK-wY7oMYAf1B0oi6OA__chheIsz";
       $("logState").textContent = "저장됨 · Supabase";
       $("logAdd").disabled = false;
     } catch (e) {
-      $("logState").textContent = "연결 실패";
       const m = String(e?.message || e);
+      if (!navigator.onLine || /failed to fetch|network|load failed/i.test(m)) {
+        $("logState").textContent = "오프라인";
+        showErr("인터넷에 연결되면 기록을 불러와요.");
+        addEventListener("online", () => { showErr(""); $("logState").textContent = "연결 중…"; start(); }, { once: true });
+        return;
+      }
+      $("logState").textContent = "연결 실패";
       showErr(/anonymous/i.test(m) ? "Supabase에서 익명 로그인(Anonymous sign-ins)이 꺼져 있어요. Authentication 설정에서 켜 주세요."
         : /relation|does not exist|schema cache/i.test(m) ? "purchases 테이블이 없어요. SQL Editor에서 테이블 만들기 코드를 실행해 주세요."
         : "Supabase 연결 오류: " + m);

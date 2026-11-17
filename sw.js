@@ -1,5 +1,5 @@
 // 앱 화면을 저장해 두고, 인터넷이 될 때는 항상 최신 버전을 먼저 받아요.
-const CACHE = "yen-calc-v2";
+const CACHE = "yen-calc-v3";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
@@ -15,8 +15,8 @@ self.addEventListener("fetch", e => {
       .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html"))));
     return;
   }
-  // 글자 인식기 파일(고정 버전): 한 번 받으면 저장해서 다시 쓰기
-  if (u.hostname === "cdn.jsdelivr.net" && /tesseract/.test(u.pathname)) {
+  // 글자 인식기·Supabase 파일(둘 다 고정 버전): 한 번 받으면 저장해서 다시 쓰기
+  if (u.hostname === "cdn.jsdelivr.net" && /tesseract|@supabase\/supabase-js@\d+\.\d+\.\d+\//.test(u.pathname)) {
     e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
       if (res.ok) { const c = res.clone(); caches.open(CACHE).then(x => x.put(e.request, c)); }
       return res;
