@@ -149,11 +149,25 @@ a{color:var(--ai)}
 .cam-hint{font-size:.75rem;color:#aab3d6;margin:0}
 
 /* Purchase log (Supabase) */
-.log-form{display:grid;grid-template-columns:1fr auto;gap:8px}
-.log-form input{min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:10px 12px;font:500 .95rem var(--f-body)}
-.log-form input:focus-visible{outline:2px solid var(--ai);border-color:var(--ai)}
-.log-form button{border:none;border-radius:8px;background:var(--ai);color:var(--on-ai);padding:10px 16px;font:600 .9rem var(--f-body);cursor:pointer}
-.log-form button:disabled{opacity:.5;cursor:default}
+#logCard input,#logCard select{min-width:0;width:100%;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:10px 12px;font:500 .95rem var(--f-body)}
+#logCard select{padding:9px 8px;font-size:.88rem}
+#logCard input:focus-visible,#logCard select:focus-visible{outline:2px solid var(--ai);border-color:var(--ai)}
+.trip-bar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center}
+.trip-new{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center}
+.trip-new button[type=submit],.log-add{border:none;border-radius:8px;background:var(--ai);color:var(--on-ai);padding:10px 16px;font:600 .9rem var(--f-body);cursor:pointer}
+.log-form{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:12px}
+.seg2{grid-template-columns:1fr 1fr}
+.krw-in{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;color:var(--ai);font-size:1.3rem}
+.krw-in input{font-family:var(--f-display)!important;font-weight:700!important;font-size:1.2rem!important;text-align:right;font-variant-numeric:tabular-nums}
+.log-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.trip-sum .big{color:var(--ai)}
+.cats{display:grid;gap:6px}
+.cat-row{display:grid;grid-template-columns:3.6em minmax(0,1fr) auto;gap:8px;align-items:center;font-size:.8rem;font-variant-numeric:tabular-nums}
+.cat-row .bar{height:8px;border-radius:4px;background:var(--ai-soft);overflow:hidden}
+.cat-row .bar i{display:block;height:100%;background:var(--ai);border-radius:4px}
+.cat-row span:last-child{color:var(--muted)}
+.day-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:700;padding:14px 0 6px;border-bottom:2px solid var(--line);font-variant-numeric:tabular-nums}
+.day-h small{font-weight:500;color:var(--muted);font-size:.78rem}
 .log-preview{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .logs{display:grid}
 .log{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -213,16 +227,39 @@ a{color:var(--ai)}
   </div>
 
   <section class="card" id="logCard">
-    <div class="card-head"><h2>구매 기록</h2><span class="note" id="logState">연결 중…</span></div>
-    <form class="log-form" id="logForm">
-      <input id="logMemo" maxlength="60" placeholder="무엇을 샀나요? (예: 편의점 도시락)" autocomplete="off">
-      <button type="submit" id="logAdd" disabled>기록</button>
+    <div class="card-head"><h2>여행 경비</h2><span class="note" id="logState">연결 중…</span></div>
+    <div class="trip-bar">
+      <select id="tripSel" aria-label="여행 선택"></select>
+      <button type="button" class="small-btn" id="tripNewBtn">+ 새 여행</button>
+      <button type="button" class="small-btn" id="tripDel" hidden>삭제</button>
+    </div>
+    <form class="trip-new" id="tripForm" hidden>
+      <input id="tripName" maxlength="40" placeholder="여행 이름 (예: 12월 오사카)" autocomplete="off">
+      <button type="submit">만들기</button>
+      <button type="button" class="small-btn" id="tripCancel">취소</button>
     </form>
-    <p class="log-preview" id="logPreview"></p>
-    <div class="logs" id="logs"></div>
-    <div class="total" id="logTotalRow" hidden><span id="logTotalLbl">총 사용</span><b id="logTotal"></b></div>
+    <div class="sum trip-sum" id="tripSum"></div>
+    <div class="cats" id="catBox" hidden></div>
+    <form class="log-form" id="logForm">
+      <div class="modes seg2" id="curSeg" role="group" aria-label="금액 종류">
+        <button type="button" data-c="jpy" aria-pressed="true">¥ 일본에서 쓴 돈</button>
+        <button type="button" data-c="krw" aria-pressed="false">₩ 원화로 낸 돈</button>
+      </div>
+      <div class="krw-in" id="krwRow" hidden><span>₩</span><input id="logKrw" inputmode="numeric" placeholder="예: 350,000" autocomplete="off" aria-label="원화 금액"></div>
+      <p class="log-preview" id="logPreview"></p>
+      <input id="logMemo" maxlength="60" placeholder="무엇에 썼나요? (예: 편의점 도시락)" autocomplete="off" aria-label="메모">
+      <div class="log-opts">
+        <select id="logDay" aria-label="일차"></select>
+        <select id="logCat" aria-label="분류">
+          <option>식비</option><option>쇼핑</option><option>교통</option><option>숙소</option><option>관광</option><option>항공</option><option>기타</option>
+        </select>
+        <select id="logPay" aria-label="결제 수단"><option value="cash">현금</option><option value="card">카드</option></select>
+      </div>
+      <button type="submit" class="log-add" id="logAdd">기록하기</button>
+    </form>
     <p class="err" id="logErr" hidden></p>
-    <p class="note">위 계산기의 엔화 금액과 지금 환율로 저장돼요. 이 휴대폰(브라우저)에서 쓴 기록만 보여요.</p>
+    <div class="logs" id="logs"></div>
+    <p class="note">"일본에서 쓴 돈"은 위 계산기의 엔화 금액과 지금 환율로 저장돼요. 항공권·숙소처럼 한국에서 낸 돈은 "원화로 낸 돈"을 골라 "여행 전"으로 기록하세요. 인터넷이 안 될 때 기록하면 휴대폰에 먼저 저장했다가 연결되면 자동으로 올라가요. 이 휴대폰(브라우저)에서 쓴 기록만 보여요.</p>
   </section>
 
   <div class="sect">
@@ -742,86 +779,240 @@ const SUPABASE_KEY = "sb_publishable_O_ndK-wY7oMYAf1B0oi6OA__chheIsz";
 
 (function () {
   const ready = !SUPABASE_URL.startsWith("여기에") && !SUPABASE_KEY.startsWith("여기에");
-  let sb = null, rows = [];
-  const showErr = msg => { $("logErr").textContent = msg; $("logErr").hidden = !msg; };
+  const NONE = "none";
+  let sb = null, online = false, flushing = false, cur = "jpy";
+  const loadJSON = (k, d) => { try { return JSON.parse(store.get(k)) ?? d; } catch (e) { return d; } };
+  // 서버에서 받은 여행·기록은 휴대폰에도 저장해서, 오프라인일 때도 보여 줘요.
+  let { trips = [], rows = [] } = loadJSON("logCache", {});
+  // 아직 서버에 못 올린 기록 (오프라인일 때 쌓였다가 연결되면 올라감)
+  let queue = loadJSON("logQueue", []);
+  let sel = store.get("logTrip");
+  const saveCache = () => store.set("logCache", JSON.stringify({ trips, rows }));
+  const saveQueue = () => store.set("logQueue", JSON.stringify(queue));
+  const showErr = msg => { $("logErr").textContent = msg || ""; $("logErr").hidden = !msg; };
+  const isNet = e => !navigator.onLine || /failed to fetch|networkerror|network request|load failed/i.test(String(e?.message || e));
+  const uuid = () => crypto.randomUUID ? crypto.randomUUID()
+    : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+  const sum = (arr, f) => arr.reduce((s, r) => s + (+f(r) || 0), 0);
+  const dayName = d => d == null ? "일차 없음" : d === 0 ? "여행 전" : d + "일차";
+
+  function fixSel() {
+    if (!sel || (sel !== NONE && !trips.some(t => String(t.id) === sel))) sel = trips[0] ? String(trips[0].id) : NONE;
+    store.set("logTrip", sel);
+  }
+  const inTrip = r => sel === NONE ? r.trip_id == null : String(r.trip_id) === sel;
+  const tripName = () => sel === NONE ? "여행 미지정" : (trips.find(t => String(t.id) === sel)?.name || "");
+  function allRows() {
+    const have = new Set(rows.map(r => r.client_id).filter(Boolean));
+    return [...queue.filter(q => !have.has(q.client_id)).map(q => ({ ...q, pending: true })), ...rows];
+  }
 
   function preview() {
+    if (cur === "krw") {
+      const k = num($("logKrw").value);
+      $("logPreview").textContent = k > 0 ? `원화 ₩${fmt(k)} 그대로 기록돼요.` : "한국에서 원화로 낸 금액을 넣어 주세요. (항공권, 숙소, 유심 등)";
+      return;
+    }
     const y = num($("jpy").value), k = y * perYen();
     $("logPreview").textContent = y > 0 ? `저장될 금액: ¥${fmt(y)} → ₩${fmt(k)} (${MODES[mode].lbl}, 100엔 ${fmt((manual || auto.per100) * MODES[mode].k, 2)}원)` : "위 계산기에 엔화 금액을 먼저 넣어 주세요.";
   }
   document.addEventListener("calc", preview); // 금액·환율이 바뀌어 calc()가 돌 때마다 미리보기 갱신
 
+  function paintState() {
+    $("logState").textContent = (online ? "저장됨 · Supabase" : navigator.onLine ? "연결 중…" : "오프라인") + (queue.length ? ` · 올라가기 전 ${queue.length}건` : "");
+  }
+
+  function rowHtml(r) {
+    const when = new Date(r.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const meta = [r.category, r.pay === "card" ? "카드" : r.pay === "cash" ? "현금" : "", when].filter(Boolean).join(" · ");
+    const key = r.pending ? "c:" + r.client_id : "i:" + r.id;
+    return `<div class="log"><div><div class="nm">${esc(r.memo || "메모 없음")}${r.pending ? '<span class="tag">올라가기 전</span>' : ""}</div><div class="when">${esc(meta)}</div></div>
+      <div class="amt"><b>₩${fmt(+r.krw)}</b><small>${r.yen != null ? "¥" + fmt(+r.yen) : "원화"}</small></div>
+      <button type="button" data-k="${esc(key)}" aria-label="${esc(r.memo || "기록")} 삭제">×</button></div>`;
+  }
+
   function render() {
-    $("logs").innerHTML = rows.map(r => {
-      const d = new Date(r.created_at);
-      const when = d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
-      return `<div class="log"><div><div class="nm">${esc(r.memo || "메모 없음")}</div><div class="when">${when} · ${esc(r.rate_mode || "")}</div></div>
-        <div class="amt"><b>₩${fmt(+r.krw)}</b><small>¥${fmt(+r.yen)}</small></div>
-        <button type="button" data-id="${r.id}" aria-label="${esc(r.memo || "기록")} 삭제">×</button></div>`;
-    }).join("") || `<p class="note">아직 기록이 없어요. 계산기에 금액을 넣고 "기록"을 눌러 보세요.</p>`;
-    const sumK = rows.reduce((s, r) => s + +r.krw, 0), sumY = rows.reduce((s, r) => s + +r.yen, 0);
-    $("logTotalRow").hidden = !rows.length;
-    $("logTotalLbl").textContent = `총 ${rows.length}건 · ¥${fmt(sumY)}`;
-    $("logTotal").textContent = "₩" + fmt(sumK);
+    fixSel();
+    $("tripSel").innerHTML = trips.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("") + `<option value="${NONE}">여행 없이 기록</option>`;
+    $("tripSel").value = sel;
+    $("tripDel").hidden = sel === NONE;
+    const list = allRows().filter(inTrip);
+
+    // 일차 선택: 여행 전, 1일차 ~ (기록된 마지막 일차 + 1, 최소 10일차)
+    const max = Math.min(60, Math.max(10, ...list.map(r => (r.day ?? 0) + 1)));
+    const want = Math.min(max, +(store.get("logDay:" + sel) ?? 1));
+    $("logDay").innerHTML = Array.from({ length: max + 1 }, (_, d) => `<option value="${d}">${dayName(d)}</option>`).join("");
+    $("logDay").value = String(want);
+
+    // 총경비 요약
+    const total = sum(list, r => r.krw);
+    const jp = list.filter(r => r.yen != null), jpK = sum(jp, r => r.krw), krOnly = total - jpK;
+    const cash = sum(list.filter(r => r.pay === "cash"), r => r.krw), card = sum(list.filter(r => r.pay === "card"), r => r.krw);
+    const local = list.filter(r => r.day > 0), nDays = new Set(local.map(r => r.day)).size;
+    const parts = [cash && "현금 ₩" + fmt(cash), card && "카드 ₩" + fmt(card), nDays && `현지 하루 평균 ₩${fmt(sum(local, r => r.krw) / nDays)}`].filter(Boolean);
+    $("tripSum").innerHTML = list.length
+      ? `<small>${esc(tripName())} 총경비 · ${list.length}건</small>
+         <span class="big">₩${fmt(total)}</span>
+         <small>일본에서 ¥${fmt(sum(jp, r => r.yen))} (₩${fmt(jpK)})${krOnly ? ` · 원화 지출 ₩${fmt(krOnly)}` : ""}</small>
+         ${parts.length ? `<small>${parts.join(" · ")}</small>` : ""}`
+      : `<small>${esc(tripName())}</small><span>아직 기록이 없어요. 아래에서 첫 지출을 기록해 보세요.</span>`;
+
+    // 분류별 막대
+    const byCat = {};
+    list.forEach(r => { const c = r.category || "미분류"; byCat[c] = (byCat[c] || 0) + (+r.krw || 0); });
+    const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    $("catBox").hidden = !(total > 0 && list.some(r => r.category));
+    $("catBox").innerHTML = cats.map(([c, v]) => `<div class="cat-row"><span>${esc(c)}</span><span class="bar"><i style="width:${Math.max(2, v / total * 100).toFixed(1)}%"></i></span><span>₩${fmt(v)} · ${Math.round(v / total * 100)}%</span></div>`).join("");
+
+    // 일차별 목록 (최근 일차부터)
+    const groups = new Map();
+    list.slice().sort((a, b) => (b.day ?? -1) - (a.day ?? -1) || new Date(b.created_at) - new Date(a.created_at))
+      .forEach(r => { const d = r.day ?? null; if (!groups.has(d)) groups.set(d, []); groups.get(d).push(r); });
+    $("logs").innerHTML = [...groups].map(([d, rs]) => {
+      const y = sum(rs.filter(r => r.yen != null), r => r.yen);
+      return `<div class="day-h"><span>${dayName(d)} <small>${rs.length}건</small></span><span>₩${fmt(sum(rs, r => r.krw))}${y ? ` <small>¥${fmt(y)}</small>` : ""}</span></div>` + rs.map(rowHtml).join("");
+    }).join("");
+    paintState();
   }
 
   async function load() {
-    const { data, error } = await sb.from("purchases").select("*").order("created_at", { ascending: false });
-    if (error) throw error;
-    rows = data || []; render();
+    const [t, p] = await Promise.all([
+      sb.from("trips").select("*").order("created_at", { ascending: false }),
+      sb.from("purchases").select("*").order("created_at", { ascending: false })
+    ]);
+    if (t.error) throw t.error;
+    if (p.error) throw p.error;
+    trips = t.data || []; rows = p.data || [];
+    saveCache(); render();
+  }
+
+  // 휴대폰에 쌓인 기록을 서버로 올리기. client_id가 같으면 두 번 올라가지 않아요.
+  async function flush() {
+    if (!sb || !online || flushing || !queue.length) return;
+    flushing = true;
+    try {
+      while (queue.length) {
+        const q = queue[0];
+        const { error } = await sb.from("purchases").upsert(q, { onConflict: "client_id", ignoreDuplicates: true });
+        if (error) {
+          if (isNet(error)) break;
+          showErr(`"${q.memo || "기록"}"을(를) 올리지 못해서 뺐어요: ${error.message}`);
+        }
+        queue.shift(); saveQueue();
+      }
+      await load();
+    } catch (e) {
+      if (!isNet(e)) showErr("기록을 올리지 못했어요: " + (e?.message || e));
+    }
+    flushing = false;
+    render();
   }
 
   async function start() {
-    preview();
+    render(); preview();
     if (!ready) { $("logState").textContent = "Supabase 연결 전"; $("logs").innerHTML = `<p class="note">index.html 아래쪽의 SUPABASE_URL, SUPABASE_KEY를 채우면 기록 기능이 켜져요.</p>`; return; }
-    if (!window.supabase) { $("logState").textContent = "오프라인"; showErr("기록 기능을 불러오지 못했어요. 인터넷 연결을 확인해 주세요."); return; }
+    if (!window.supabase) { online = false; paintState(); return; } // 오프라인: 휴대폰에 저장된 기록만 보여 줌
     try {
-      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      let { data: { session } } = await sb.auth.getSession();
+      sb = sb || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         const { error } = await sb.auth.signInAnonymously();
         if (error) throw error;
       }
       await load();
-      $("logState").textContent = "저장됨 · Supabase";
-      $("logAdd").disabled = false;
+      online = true; showErr(""); render();
+      flush();
     } catch (e) {
-      const m = String(e?.message || e);
-      if (!navigator.onLine || /failed to fetch|network|load failed/i.test(m)) {
-        $("logState").textContent = "오프라인";
-        showErr("인터넷에 연결되면 기록을 불러와요.");
-        addEventListener("online", () => { showErr(""); $("logState").textContent = "연결 중…"; start(); }, { once: true });
-        return;
-      }
+      online = false;
+      if (isNet(e)) { paintState(); return; } // 인터넷이 돌아오면 다시 시도
       $("logState").textContent = "연결 실패";
+      const m = String(e?.message || e);
       showErr(/anonymous/i.test(m) ? "Supabase에서 익명 로그인(Anonymous sign-ins)이 꺼져 있어요. Authentication 설정에서 켜 주세요."
-        : /relation|does not exist|schema cache/i.test(m) ? "purchases 테이블이 없어요. SQL Editor에서 테이블 만들기 코드를 실행해 주세요."
+        : /relation|does not exist|schema cache/i.test(m) ? "필요한 테이블이 없어요. SQL Editor에서 테이블 만들기 코드를 실행해 주세요."
         : "Supabase 연결 오류: " + m);
     }
   }
+  addEventListener("online", () => { if (!online) start(); else flush(); });
+  addEventListener("offline", () => { online = false; paintState(); });
 
-  $("logForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const y = num($("jpy").value);
-    if (!sb || !(y > 0)) { preview(); return; }
-    showErr("");
-    $("logAdd").disabled = true;
-    const row = { memo: $("logMemo").value.trim() || null, yen: y, krw: Math.round(y * perYen()),
-      rate_per100: Math.round((manual || auto.per100) * MODES[mode].k * 100) / 100, rate_mode: MODES[mode].lbl };
-    const { data, error } = await sb.from("purchases").insert(row).select().single();
-    $("logAdd").disabled = false;
-    if (error) { showErr("저장하지 못했어요: " + error.message); return; }
-    rows.unshift(data); render(); $("logMemo").value = "";
+  // 기록하기
+  $("logForm").addEventListener("submit", e => {
+    e.preventDefault(); showErr("");
+    let row;
+    if (cur === "jpy") {
+      const y = num($("jpy").value);
+      if (!(y > 0)) { preview(); $("jpy").focus(); return; }
+      row = { yen: y, krw: Math.round(y * perYen()), rate_per100: Math.round((manual || auto.per100) * MODES[mode].k * 100) / 100, rate_mode: MODES[mode].lbl };
+    } else {
+      const k = num($("logKrw").value);
+      if (!(k > 0)) { preview(); $("logKrw").focus(); return; }
+      row = { yen: null, krw: Math.round(k), rate_per100: null, rate_mode: "원화" };
+    }
+    Object.assign(row, {
+      client_id: uuid(), memo: $("logMemo").value.trim() || null,
+      trip_id: sel === NONE ? null : +sel, day: +$("logDay").value,
+      category: $("logCat").value, pay: $("logPay").value, created_at: new Date().toISOString()
+    });
+    queue.push(row); saveQueue();
+    $("logMemo").value = ""; $("logKrw").value = "";
+    render(); preview(); flush();
   });
 
+  // 기록 삭제
   $("logs").addEventListener("click", async e => {
-    const id = e.target.closest("button[data-id]")?.dataset.id; if (!id || !sb) return;
-    const r = rows.find(x => String(x.id) === id);
+    const k = e.target.closest("button[data-k]")?.dataset.k; if (!k) return;
+    const pending = k.startsWith("c:"), id = k.slice(2);
+    const r = allRows().find(x => pending ? x.pending && x.client_id === id : String(x.id) === id);
     if (!confirm(`"${r?.memo || "이 기록"}"을(를) 삭제할까요?`)) return;
+    if (pending) { queue = queue.filter(q => q.client_id !== id); saveQueue(); render(); return; }
+    if (!online) { showErr("인터넷에 연결된 뒤에 삭제할 수 있어요."); return; }
     const { error } = await sb.from("purchases").delete().eq("id", id);
     if (error) { showErr("삭제하지 못했어요: " + error.message); return; }
-    rows = rows.filter(x => String(x.id) !== id); render();
+    rows = rows.filter(x => String(x.id) !== id); saveCache(); render();
   });
+
+  // 여행 고르기·만들기·삭제
+  $("tripSel").addEventListener("change", e => { sel = e.target.value; render(); });
+  $("tripNewBtn").addEventListener("click", () => { $("tripForm").hidden = false; $("tripName").focus(); });
+  $("tripCancel").addEventListener("click", () => { $("tripForm").hidden = true; });
+  $("tripForm").addEventListener("submit", async e => {
+    e.preventDefault(); showErr("");
+    const name = $("tripName").value.trim();
+    if (!name) { $("tripName").focus(); return; }
+    if (!online) { showErr("새 여행은 인터넷에 연결됐을 때 만들 수 있어요. 출발 전에 만들어 두세요."); return; }
+    const { data, error } = await sb.from("trips").insert({ name }).select().single();
+    if (error) { showErr("여행을 만들지 못했어요: " + error.message); return; }
+    trips.unshift(data); sel = String(data.id); store.set("logDay:" + sel, "1");
+    $("tripName").value = ""; $("tripForm").hidden = true;
+    saveCache(); render();
+  });
+  $("tripDel").addEventListener("click", async () => {
+    const t = trips.find(x => String(x.id) === sel); if (!t) return;
+    const n = allRows().filter(inTrip).length;
+    if (!confirm(`"${t.name}" 여행과 그 안의 기록 ${n}건을 모두 삭제할까요? 되돌릴 수 없어요.`)) return;
+    if (!online) { showErr("인터넷에 연결된 뒤에 삭제할 수 있어요."); return; }
+    const { error } = await sb.from("trips").delete().eq("id", t.id);
+    if (error) { showErr("삭제하지 못했어요: " + error.message); return; }
+    trips = trips.filter(x => x !== t);
+    rows = rows.filter(r => String(r.trip_id) !== sel);
+    queue = queue.filter(q => String(q.trip_id) !== sel);
+    sel = null; saveQueue(); saveCache(); render();
+  });
+
+  // 입력 옵션
+  $("logDay").addEventListener("change", e => store.set("logDay:" + sel, e.target.value));
+  $("curSeg").addEventListener("click", e => {
+    const c = e.target.closest("button")?.dataset.c; if (!c) return;
+    cur = c;
+    document.querySelectorAll("#curSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === c));
+    $("krwRow").hidden = c !== "krw";
+    preview();
+    if (c === "krw") $("logKrw").focus();
+  });
+  $("logKrw").addEventListener("input", e => { reformat(e.target); preview(); });
+  // 적용 환율을 "카드 결제"로 바꾸면 결제 수단도 카드로 맞춰 줌
+  $("logPay").value = mode === "card" ? "card" : "cash";
+  $("modes").addEventListener("click", e => { const m = e.target.dataset.m; if (m) $("logPay").value = m === "card" ? "card" : "cash"; });
 
   start();
 })();
